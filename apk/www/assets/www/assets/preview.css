@@ -1,0 +1,327 @@
+
+/* remove padding, margin and any touch action or delay */
+html, body {
+	padding: 0;
+	margin: 0;
+	overflow: hidden;
+}
+
+input, button, select {
+	padding: 0;
+	margin: 0;
+}
+
+html, body, canvas {
+	touch-action-delay: none;
+	touch-action: none;
+}
+
+/* debugger inspect element */
+#inspect-outline {
+	position: absolute;
+	border: 2px dotted red;
+	overflow: hidden;
+	font-size: 8pt;
+	font-family: Sans serif;
+	color: #444;
+	pointer-events: none;
+	animation: flash 2s linear 0s infinite;
+	background-image: url("../drama/xfDebugger/icons/inspect.png");
+}
+
+#init_loading_div {
+    z-index: 10;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100%;
+    transform-origin: 0 0;
+    transform: translate(-50%, -50%);
+}
+
+.evlogo_v {
+    margin-left: 50%;
+    transform: translateX(-50%);
+    width: 24.6%;
+}
+
+.evlogo_h {
+    margin-left: 50%;
+    transform: translateX(-50%);
+    width: 55.7%;
+}
+
+input.xfplugin:focus, textarea.xfplugin:focus {
+  outline:none;
+}
+
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    appearance: none;
+    margin: 0;
+}
+
+#xf-root{
+    position: absolute;
+}
+
+#domContainer{
+    pointer-events: none;
+}
+
+.xfplugin{
+    pointer-events: auto;
+}
+
+/* ============================================================
+   奥拉星风格：画面两侧留白与旧地图入口
+   ============================================================ */
+
+/* 宽屏/异形屏两侧留白：深空星海 + 星云光晕 */
+html, body {
+    background-color: #04070f !important;
+    background-image:
+        radial-gradient(ellipse 60% 55% at 12% 26%, rgba(40, 112, 226, .30) 0%, rgba(40, 112, 226, 0) 70%),
+        radial-gradient(ellipse 55% 60% at 88% 72%, rgba(120, 64, 220, .26) 0%, rgba(120, 64, 220, 0) 70%),
+        radial-gradient(ellipse 80% 70% at 50% 118%, rgba(20, 80, 160, .30) 0%, rgba(20, 80, 160, 0) 70%),
+        radial-gradient(circle, rgba(255, 255, 255, .55) 1px, rgba(255, 255, 255, 0) 1.6px),
+        radial-gradient(circle, rgba(150, 212, 255, .40) 1px, rgba(150, 212, 255, 0) 1.5px),
+        radial-gradient(circle, rgba(120, 190, 255, .30) 1px, rgba(120, 190, 255, 0) 1.4px),
+        linear-gradient(180deg, #071427 0%, #040810 50%, #070d1c 100%);
+    background-size: auto, auto, auto, 121px 121px, 197px 197px, 83px 83px, auto;
+    background-position: center, center, center, 0 0, 41px 57px, 19px 31px, center;
+    background-repeat: no-repeat, no-repeat, no-repeat, repeat, repeat, repeat, no-repeat;
+}
+
+/* 游戏画布边缘：进入正式场景后再描边，避免启动时默认小画布露出方框 */
+canvas.tq-ready {
+    box-shadow: 0 0 0 1px rgba(88, 178, 255, .30), 0 0 38px rgba(40, 130, 255, .32);
+}
+
+#oldmap-root {
+    position: fixed;
+    z-index: 2147483647;
+    left: 2px;
+    bottom: 13vh;
+    font-family: system-ui, -apple-system, "Microsoft YaHei", sans-serif;
+    font-size: 13px;
+    color: #eaf8ff;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    isolation: isolate;
+}
+
+#oldmap-toggle {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 13px 7px 12px;
+    border: 1px solid rgba(122, 220, 255, .72);
+    border-radius: 14px;
+    background: linear-gradient(180deg, rgba(30, 86, 150, .95) 0%, rgba(10, 32, 66, .97) 100%);
+    color: #eaf9ff;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    line-height: 1.15;
+    outline: none;
+    cursor: pointer;
+    box-shadow: 0 0 0 1px rgba(8, 30, 60, .9), 0 0 14px rgba(54, 166, 255, .42),
+        inset 0 1px 0 rgba(190, 240, 255, .40);
+    text-shadow: 0 0 8px rgba(90, 200, 255, .55);
+    transition: box-shadow .18s ease, transform .08s ease;
+}
+
+#oldmap-toggle::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    transform: rotate(45deg);
+    background: linear-gradient(135deg, #b8f0ff, #3aa8ff);
+    box-shadow: 0 0 8px rgba(90, 200, 255, .9);
+}
+
+#oldmap-toggle:active {
+    transform: translateY(1px);
+    box-shadow: 0 0 0 1px rgba(8, 30, 60, .9), 0 0 20px rgba(90, 205, 255, .70),
+        inset 0 1px 0 rgba(215, 245, 255, .50);
+}
+
+#oldmap-panel {
+    position: absolute;
+    left: 0;
+    bottom: calc(100% + 9px);
+    display: none;
+    flex-direction: column;
+    gap: 7px;
+    padding: 14px 14px 12px;
+    width: min(78vw, 376px);
+    max-height: calc(50vh - 30px);
+    box-sizing: border-box;
+    overflow: auto;
+    border: 1px solid rgba(108, 214, 255, .55);
+    border-radius: 14px;
+    background: linear-gradient(160deg, rgba(18, 54, 102, .97) 0%, rgba(7, 22, 48, .98) 46%, rgba(10, 32, 66, .98) 100%);
+    box-shadow: 0 0 0 1px rgba(6, 24, 48, .90), 0 14px 38px rgba(0, 0, 0, .58),
+        0 0 26px rgba(52, 160, 255, .28), inset 0 1px 0 rgba(160, 230, 255, .22);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+    pointer-events: auto;
+}
+
+#oldmap-panel::before {
+    content: "";
+    position: absolute;
+    inset: 5px;
+    border: 1px solid rgba(120, 220, 255, .16);
+    border-radius: 10px;
+    pointer-events: none;
+}
+
+#oldmap-panel::-webkit-scrollbar {
+    width: 4px;
+}
+
+#oldmap-panel::-webkit-scrollbar-thumb {
+    border-radius: 2px;
+    background: rgba(100, 200, 255, .35);
+}
+
+.oldmap-title {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 2px 2px 9px;
+    border-bottom: 1px solid rgba(110, 208, 255, .28);
+    color: #a9e7ff;
+    font-size: 12.5px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-shadow: 0 0 9px rgba(70, 190, 255, .50);
+}
+
+.oldmap-title::before {
+    content: "";
+    align-self: center;
+    width: 4px;
+    height: 13px;
+    border-radius: 2px;
+    background: linear-gradient(180deg, #8ce6ff, #2a7cff);
+    box-shadow: 0 0 8px rgba(80, 200, 255, .9);
+}
+
+.oldmap-title-count {
+    margin-left: auto;
+    color: #7fb4d6;
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 0;
+}
+
+.oldmap-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 7px;
+}
+
+.oldmap-map-btn {
+    position: relative;
+    padding: 9px 8px;
+    border: 1px solid rgba(92, 190, 255, .38);
+    border-radius: 9px;
+    background: linear-gradient(180deg, rgba(34, 88, 156, .55) 0%, rgba(12, 34, 70, .78) 100%);
+    color: #d7f3ff;
+    font-family: inherit;
+    font-size: 12.5px;
+    line-height: 1.2;
+    letter-spacing: .5px;
+    text-align: center;
+    outline: none;
+    cursor: pointer;
+    box-shadow: inset 0 1px 0 rgba(175, 232, 255, .20), 0 2px 7px rgba(0, 0, 0, .35);
+    text-shadow: 0 1px 3px rgba(0, 10, 25, .80);
+    transition: background .15s ease, border-color .15s ease, box-shadow .15s ease, transform .08s ease;
+}
+
+.oldmap-map-btn::before {
+    content: "";
+    position: absolute;
+    left: 9px;
+    top: 50%;
+    width: 5px;
+    height: 5px;
+    margin-top: -2.5px;
+    transform: rotate(45deg);
+    background: #ffd76a;
+    box-shadow: 0 0 7px rgba(255, 206, 92, .85);
+    opacity: .8;
+}
+
+.oldmap-map-btn:active {
+    transform: translateY(1px);
+    border-color: #9fe4ff;
+    background: linear-gradient(180deg, rgba(60, 140, 220, .75) 0%, rgba(22, 64, 120, .85) 100%);
+    box-shadow: inset 0 1px 0 rgba(210, 245, 255, .35), 0 0 14px rgba(90, 190, 255, .55);
+}
+
+.oldmap-back-btn {
+    margin-top: 3px;
+    padding: 10px 8px;
+    border: 1px solid rgba(255, 214, 110, .62);
+    border-radius: 9px;
+    background: linear-gradient(180deg, rgba(255, 203, 84, .24) 0%, rgba(150, 92, 12, .30) 100%);
+    color: #ffe8a6;
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    outline: none;
+    cursor: pointer;
+    box-shadow: inset 0 1px 0 rgba(255, 240, 190, .30), 0 0 12px rgba(255, 180, 50, .18);
+    text-shadow: 0 0 8px rgba(255, 190, 70, .50);
+    transition: background .15s ease, border-color .15s ease, box-shadow .15s ease, transform .08s ease;
+}
+
+.oldmap-back-btn:active {
+    transform: translateY(1px);
+    border-color: #ffe08a;
+    background: linear-gradient(180deg, rgba(255, 214, 100, .40) 0%, rgba(180, 112, 16, .42) 100%);
+    box-shadow: 0 0 18px rgba(255, 200, 80, .42), inset 0 1px 0 rgba(255, 248, 210, .45);
+}
+
+.oldmap-tip {
+    padding: 7px 2px 0;
+    color: #8db6d4;
+    font-size: 11px;
+    line-height: 1.55;
+    opacity: .85;
+}
+
+.oldmap-toast {
+    position: fixed;
+    left: 50%;
+    bottom: calc(24px + env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    max-width: 86vw;
+    padding: 8px 16px;
+    border: 1px solid rgba(110, 210, 255, .45);
+    border-radius: 10px;
+    background: rgba(6, 20, 42, .92);
+    color: #dff5ff;
+    font-size: 13px;
+    line-height: 1.4;
+    text-align: center;
+    opacity: 0;
+    transition: opacity .25s ease;
+    pointer-events: none;
+    z-index: 2147483647;
+    box-shadow: 0 0 16px rgba(40, 140, 255, .30);
+}

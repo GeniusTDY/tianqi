@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html class="tq-booting">
+<head>
+    <meta charset="UTF-8">
+    <title>$NAME$</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, minimal-ui">
+    <link rel="stylesheet" href="assets/preview.css">
+    <link rel="icon" type="image/png" href="assets/icons/icon-32.png">
+    <style>
+    /* 启动页：原生 logo 结束后立即显示引擎加载页（与游戏内引擎 loader 同版式） */
+    #tq-boot{position:fixed;left:0;top:0;width:100%;height:100%;z-index:99999;
+        display:flex;align-items:center;justify-content:center;overflow:hidden;pointer-events:none;
+        transition:opacity .22s linear}
+    #tq-boot.tq-hide{opacity:0}
+    /* 启动阶段整页白底：与系统启动屏、引擎自带加载页的背景连成一片，避免出现深色/灰色边带 */
+    html.tq-booting body{background:#fff !important;background-image:none !important}
+    #tq-boot-stage{position:relative;width:1200px;height:700px;flex:0 0 auto;transform-origin:50% 50%;
+        background:#fff;font-family:arial,helvetica,sans-serif}
+    #tq-boot-icon{position:absolute;left:440px;top:180px;width:321px;height:321px;border:0;display:block}
+    #tq-boot-name{display:none}
+    #tq-boot-run{display:none}
+    #tq-boot-track{position:absolute;left:367px;top:504px;width:467px;height:32px;background:#454545}
+    #tq-boot-fill{position:absolute;left:0;top:0;height:32px;width:100%;background:#59BFCE;
+        transform-origin:0 50%;transform:scaleX(0);will-change:transform;
+        animation:tqfill 5s ease-out forwards, tqslow 20s linear 5s forwards}
+    @keyframes tqfill{from{transform:scaleX(0)}to{transform:scaleX(.3)}}
+    @keyframes tqslow{from{transform:scaleX(.3)}to{transform:scaleX(.45)}}
+    #tq-boot-txt{position:absolute;left:409px;top:508px;width:330px;height:28px;text-align:center;
+        font-size:19px;line-height:28px;color:#242740}
+    #tq-boot-pct{position:absolute;left:651px;top:508px;width:95px;text-align:center;
+        font-size:21px;line-height:26px;color:#242740}
+    </style>
+</head>
+<body style="background-color: #04070f;">
+    <div id="tq-boot"><div id="tq-boot-stage">
+        <img id="tq-boot-icon" src="assets/images/emblem321.webp" alt="">
+        <div id="tq-boot-name">天启竞技场</div>
+        <div id="tq-boot-run"></div>
+        <div id="tq-boot-track"><div id="tq-boot-fill"></div></div>
+        <div id="tq-boot-txt">正在加载...</div>
+        <div id="tq-boot-pct">0%</div>
+    </div></div>
+    <div id="fb-root"></div>
+    <div id="init_loading_div"></div>
+    
+
+
+
+
+   <!--    <script src="https://cdn.jsdelivr.net/npm/vconsole"></script>   -->
+    <!--   <script>var vConsole = new VConsole();</script>    -->
+
+
+
+
+
+     <script src="cordova.js"></script>   
+    <script src="jszip.min.js"></script>
+    <script src="autoRuntime.js"></script>
+
+    <!-- ============================================ -->
+
+    <!-- 正常加载游戏 -->
+ 
+    <script src="config.js"></script>
+    <script src="autojiemi.js"></script>
+    <script src="libs.js"></script>
+    <script>
+    (function(){
+      var KEY='用户信息';
+      var KEYS=['用户名','多多号','密码','达斯特入侵','亚比背包','挑战之路','王牌风暴','亚比仓库','天启星盘'];
+      var curId=null;
+      var __tqIdType=null, __tqInputTypes=null;
+      function genId(){ return String(Math.floor(10000+Math.random()*90000)); }
+      function makeJson(id){
+        var k=[],v=[],i,vals=['小奥拉',id,'','未开启','未开启','未开启','未开启','未开启','未开启'];
+        for(i=0;i<KEYS.length;i++){ k.push([KEYS[i]]); v.push([vals[i]]); }
+        return JSON.stringify({xfarray:true,size:[2,KEYS.length,1],data:[k,v]});
+      }
+      function isInputType(ty){
+        if(!ty) return false;
+        var pid=ty.plugin&&ty.plugin.id;
+        if(pid===19) return true;
+        var n=ty.name;
+        return typeof n==='string'&&(n.indexOf('输入框')>=0||n==='奥拉名注册'||n.indexOf('兑换码')>=0||n.indexOf('搜索')>=0);
+      }
+      function getInputTypes(rt){
+        if(__tqInputTypes) return __tqInputTypes;
+        var out=[], list=(rt&&rt.types_by_index)||[];
+        for(var i=0;i<list.length;i++) if(isInputType(list[i])) out.push(list[i]);
+        if(out.length) __tqInputTypes=out;
+        return out;
+      }
+      function fill(){
+        if(!curId) return;
+        try{
+          var rt=window.xfruntime;
+          if(!rt||!rt.types_by_index) return;
+          if(!__tqIdType){
+            for(var i=0;i<rt.types_by_index.length;i++){
+              var t=rt.types_by_index[i];
+              if(t&&t.name==='多多号输入框'){ __tqIdType=t; break; }
+            }
+          }
+          var ty=__tqIdType;
+          if(!ty||!ty.instances) return;
+          for(var j=0;j<ty.instances.length;j++){
+            var o=ty.instances[j];
+            if(!o||o.isDestroyed||o.__tqFilled) continue;
+            o.__tqFilled=true;
+            if(!o.value){
+              o.value=curId;
+              if(o.setText) o.setText();
+            }
+          }
+        }catch(e){}
+      }
+      function init(){
+        var lf=window.localforage;
+        if(!lf){ setTimeout(init,100); return; }
+        lf.getItem(KEY).then(function(v){
+          if(v){
+            try{
+              var o=(typeof v==='string')?JSON.parse(v):v;
+              curId=o.data[1][1][0];
+            }catch(e){}
+          }
+          if(!curId){
+            curId=genId();
+            return lf.setItem(KEY, makeJson(curId));
+          }
+        }).then(fill).catch(function(){});
+        setInterval(fill,1000);
+      }
+      init();
+      var glowTimer=setInterval(glow,200);
+      function glow(){
+        try{
+          var rt=window.xfruntime, c=rt&&rt.canvas;
+          if(!c||!rt.running_layout||rt.running_layout.name==='入口') return;
+          if(c.clientWidth>window.innerWidth*0.5&&c.clientHeight>window.innerHeight*0.5){
+            c.classList.add('tq-ready');
+            document.documentElement.classList.remove('tq-booting');
+            clearInterval(glowTimer);
+          }
+        }catch(e){}
+      }
+      function focusAt(ev){
+        if(!/android/i.test(navigator.userAgent)) return;
+        try{
+          var rt=window.xfruntime, c=rt&&rt.canvas;
+          if(!rt||!c||!window.xf||!window.xf.checkTouchable) return;
+          var ts=ev.changedTouches, t=ts&&ts[0];
+          if(!t) return;
+          var px=t.pageX-c.offsetLeft, py=t.pageY-c.offsetTop, hit=null;
+          var list=getInputTypes(rt);
+          for(var i=0;i<list.length&&!hit;i++){
+            var ty=list[i];
+            if(!ty||!ty.instances) continue;
+            for(var j=0;j<ty.instances.length;j++){
+              var o=ty.instances[j];
+              if(!o||o.isDestroyed||!o.inputProxy||!o.visible||!o.layer||!o.layer.visible) continue;
+              if(!o.layer.layout||o.layer.layout!==rt.running_layout) continue;
+              if(window.xf.checkTouchable(o,px,py)){ hit=o; break; }
+            }
+          }
+          if(!hit) return;
+          if(ev.cancelable) ev.preventDefault();
+          hit.focus();
+        }catch(e){}
+      }
+      document.addEventListener('touchstart',focusAt,{capture:true,passive:false});
+    })();
+    </script>
+    <script>
+    /* 非按钮类可点击对象：统一的按下反馈（透明度脉冲） */
+    (function(){
+      var NAMES = ('星球 基因秘境PVE 音乐开关 亚比背包亚比球 亚比背包技能展示 亚比背包特性 特性图标 ' +
+        'BOSS方战斗Buff 选中亚比蛋 天启之塔挑战图标 天赋道具框 仓库切换 亚比蛋图标 固化放置 ' +
+        '天启之塔 生态园 接天之廊 伏天之城 亚比研究中心 蓝宝石要塞 奥拉广场 极天之门 奥拉之树 欢乐岛 ' +
+        '十字大道 HELLO学院 我的家园 流星购物街 传送核心 指挥中心 主题公园 战斗星域 风暴沙漠 光影森林 ' +
+        '六芒前殿 海枯小镇 水上都市 晨光大陆 奇灵神树 基因秘境 白皇殿 寒冰王座 太阳神殿 龙皇殿 青龙堂 ' +
+        '烈焰宝塔 雀皇殿 玄皇殿 考验之巅 烈焰洞穴 龙族圣殿 玄武堂 选择之殿 ' +
+        '艾夕区 索里德区 思伍德区 比特区 发明岛 费尔区 海文花园 雷鸣大陆 沃尔特区 艺术之都 上古神殿 ' +
+        '艾夕 索里德 思伍德 沃尔特 费尔 比特 海文 雷鸣 艺术 发明').split(' ');
+      /* NPC小图不参与透明度反馈：点击 NPC 会让角色模型短暂变透明，观感异常 */
+      var FAMS = '背包道具 地图进入按钮 异空间按钮 亚比背包道具实例 亚比装备同类组'.split(' ');
+      var SKIP = {'地图':1,'不可点击部分':1,'不可点击':1};
+      var SKIPFAM = {'地图':1};
+      var TYPE = {}, FAM = {}, i;
+      for(i=0;i<NAMES.length;i++) TYPE[NAMES[i]]=1;
+      for(i=0;i<FAMS.length;i++) FAM[FAMS[i]]=1;
+      var lastTouch=0;
+      function isClickable(ty){
+        if(!ty||!ty.name||SKIP[ty.name]) return false;
+        var fs=ty.families;
+        if(fs) for(var k=0;k<fs.length;k++) if(fs[k]&&SKIPFAM[fs[k].name]) return false;
+        if(TYPE[ty.name]) return true;
+        if(fs) for(var k=0;k<fs.length;k++) if(fs[k]&&FAM[fs[k].name]) return true;
+        return false;
+      }
+      function topAt(rt,px,py){
+        var lay=rt.running_layout;
+        if(!lay||!lay.layers) return null;
+        var layers=lay.layers;
+        for(var k=layers.length-1;k>=0;k--){
+          var l=layers[k];
+          if(!l||!l.visible||typeof l.getFirstTouch!=='function') continue;
+          var o=l.getFirstTouch(px,py);
+          if(o) return o;
+        }
+        return null;
+      }
+      function press(o){
+        if(!o||o.isDestroyed||!window.TWEEN) return;
+        var now=Date.now();
+        if(o.__tqPressAt&&now-o.__tqPressAt<120) return;
+        o.__tqPressAt=now;
+        if(o.__tqDown) o.__tqDown.stop();
+        if(o.__tqUp) o.__tqUp.stop();
+        var base=(typeof o.opacity==='number')?o.opacity:1;
+        o.__tqBase=base;
+        o.__tqDown=new TWEEN.Tween({v:base}).to({v:Math.max(0.25,base*0.55)},70)
+          .easing(tweenEase())
+          .onUpdate(function(tv){ if(!o.isDestroyed) o.opacity=tv.v; }).start();
+        clearTimeout(o.__tqTimer);
+        o.__tqTimer=setTimeout(function(){ restore(o); },140);
+      }
+      function restore(o){
+        if(!o||o.isDestroyed||!window.TWEEN) return;
+        if(o.__tqDown) o.__tqDown.stop();
+        var base=(typeof o.__tqBase==='number')?o.__tqBase:1;
+        var from=(typeof o.opacity==='number')?o.opacity:base;
+        o.__tqUp=new TWEEN.Tween({v:from}).to({v:base},150)
+          .easing(tweenEase())
+          .onUpdate(function(tv){ if(!o.isDestroyed) o.opacity=tv.v; }).start();
+      }
+      function tweenEase(){
+        var E=TWEEN.Easing;
+        return (E&&E.Quadratic&&E.Quadratic.Out)?E.Quadratic.Out:E.Linear.None;
+      }
+      function onDown(ev){
+        try{
+          if(ev.type==='touchstart') lastTouch=Date.now();
+          else if(Date.now()-lastTouch<800) return;
+          var tag=ev.target&&ev.target.tagName;
+          if(tag&&/^(INPUT|TEXTAREA|SELECT|BUTTON)$/i.test(tag)) return;
+          var rt=window.xfruntime;
+          if(!rt||!rt.canvas||!rt.running_layout||!window.xf||!xf.checkTouchable) return;
+          if(window.xf.MessageBox&&xf.MessageBox.isMessageBoxShow&&xf.MessageBox.isMessageBoxShow()) return;
+          var c=rt.canvas, t=ev.changedTouches&&ev.changedTouches[0];
+          var px=(t?t.pageX:ev.pageX)-c.offsetLeft, py=(t?t.pageY:ev.pageY)-c.offsetTop;
+          if(!(px>=0&&py>=0&&px<=c.clientWidth&&py<=c.clientHeight)) return;
+          var o=topAt(rt,px,py);
+          if(!o||!o.type) return;
+          if(o.type.plugin&&o.type.plugin.id===13) return;
+          if(!xf.checkTouchable(o,px,py)) return;
+          if(!isClickable(o.type)) return;
+          var lay=rt.running_layout;
+          if(lay&&lay.width&&lay.height&&typeof o.width==='number'&&typeof o.height==='number'&&
+             o.width*o.height>lay.width*lay.height*0.5) return;
+          press(o);
+        }catch(e){}
+      }
+      document.addEventListener('touchstart',onDown,{capture:true,passive:true});
+      document.addEventListener('mousedown',onDown,{capture:true,passive:true});
+    })();
+    </script>
+    <script src="app.js"></script>
+    <script src="refTable.js"></script>
+    <script src="effects.js"></script>
+
+    <script src="bundle.js"></script>
+    <script src="spine-fix.js"></script>
+</head>
+<body>
+</body>
+<script src="oldmaps.js"></script>
+<script>
+/* 启动页：原生 logo 消失后直接显示加载进度页（复刻引擎 loader 版式），
+   等引擎自己的 loader 真正开始绘制后再淡出，交接时画面完全一致 */
+(function(){
+  var el=document.getElementById('tq-boot'), stage=document.getElementById('tq-boot-stage');
+  var fill=document.getElementById('tq-boot-fill'), pct=document.getElementById('tq-boot-pct');
+  if(!el||!stage) return;
+  function fit(){
+    var s=Math.min(window.innerWidth/1200, window.innerHeight/700);
+    stage.style.transform='scale('+s+')';
+  }
+  fit();
+  window.addEventListener('resize',fit);
+  window.addEventListener('orientationchange',fit);
+
+  var BARW=1200-13, t0=Date.now(), done=false, shown=-1;
+  /* 引擎初始化时主线程会被占满，JS 动画会整段冻结在 1% 左右。
+     因此进度条本体改由 CSS keyframes 驱动（合成线程执行，主线程卡住也照常推进），
+     这里的 JS 只负责同步数字，保证两者节奏一致。 */
+  function valueAt(ms){
+    if(ms<5000){ var t=ms/5000; return 30*(1-(1-t)*(1-t)); }
+    return Math.min(45, 30+(ms-5000)/20000*15);
+  }
+  (function paint(){
+    if(done) return;
+    var v=valueAt(Date.now()-t0);
+    var ip=Math.floor(v);
+    if(ip!==shown){ shown=ip; pct.textContent=ip+'%'; }
+    requestAnimationFrame(paint);
+  })();
+
+  function hide(){
+    if(done) return;
+    done=true;
+    el.className='tq-hide';
+    setTimeout(function(){ if(el&&el.parentNode) el.parentNode.removeChild(el); },300);
+  }
+  /* 引擎 loader 已上屏的信号：主画布被隐藏 / isSplashing 为真 / 首个布局已启动 */
+  function loaderUp(){
+    var rt=window.xfruntime;
+    if(rt){
+      if(rt.canvas&&rt.canvas.hidden) return true;
+      if(rt.isSplashing) return true;
+      if(rt.running_layout) return true;
+    }
+    return false;
+  }
+  var upAt=0, frames=0;
+  var raf=window.requestAnimationFrame||function(f){ return setTimeout(f,16); };
+  (function tick(){
+    if(done) return;
+    try{
+      var rt=window.xfruntime;
+      /* 首个布局已启动 = 引擎 loader 已在绘制，再等 2 帧即交接，不再留稳定窗口 */
+      if(rt&&rt.running_layout){
+        if(++frames>=2){ raf(hide); return; }
+      }else if(loaderUp()){
+        if(!upAt) upAt=Date.now();
+        if(Date.now()-upAt>120){ hide(); return; }
+      }else{ upAt=0; frames=0; }
+    }catch(e){}
+    if(Date.now()-t0>90000){ hide(); return; }
+    raf(tick);
+  })();
+})();
+</script>
+</html>
