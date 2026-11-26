@@ -47,10 +47,10 @@
     #tq-boot-pulse{position:absolute;left:16vw;bottom:calc(19vh + 1.35vh);
         width:9vh;height:9vh;margin:0 0 -4.5vh -4.5vh;border-radius:50%;
         pointer-events:none;opacity:0;will-change:transform,opacity;
-        background:radial-gradient(circle,rgba(156,238,248,.9) 0%,rgba(89,191,206,.45) 38%,rgba(89,191,206,0) 70%);
+        background:radial-gradient(circle,rgba(156,238,248,.72) 0%,rgba(89,191,206,.3) 40%,rgba(89,191,206,0) 72%);
         transition:left .45s cubic-bezier(.25,.8,.3,1)}
-    #tq-boot-pulse.pv{animation:tqpulse .6s ease-out}
-    @keyframes tqpulse{0%{opacity:0;transform:scale(.35)}28%{opacity:.85}100%{opacity:0;transform:scale(1.35)}}
+    #tq-boot-pulse.pv{animation:tqpulse .95s cubic-bezier(.3,.5,.3,1)}
+    @keyframes tqpulse{0%{opacity:0;transform:scale(.5)}32%{opacity:.55}100%{opacity:0;transform:scale(1.25)}}
     /* 「正在初始化…」的省略号呼吸动画 */
     #tq-boot-txt .tqdot{display:inline-block;animation:tqdot 1.2s linear infinite}
     #tq-boot-txt .tqdot:nth-child(3){animation-delay:.2s}
@@ -335,8 +335,8 @@
     if(pulse){
       pulse.style.left=(16+68*p/100)+'vw';
       var now=Date.now();
-      /* 脉冲节流：进度更新很密时保持约每 0.5s 一次的柔和呼吸，避免闪烁 */
-      if(now-lastPulse>520){
+      /* 脉冲节流：进度更新很密时保持约每 0.9s 一次的柔和呼吸，避免闪烁 */
+      if(now-lastPulse>900){
         lastPulse=now;
         pulse.classList.remove('pv');
         void pulse.offsetWidth;
