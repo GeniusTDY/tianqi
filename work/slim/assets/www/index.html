@@ -7,28 +7,33 @@
     <link rel="stylesheet" href="assets/preview.css">
     <link rel="icon" type="image/png" href="assets/icons/icon-32.png">
     <style>
-    /* 启动页：原生 logo 结束后立即显示引擎加载页（与游戏内引擎 loader 同版式） */
-    #tq-boot{position:fixed;left:0;top:0;width:100%;height:100%;z-index:99999;
-        display:flex;align-items:center;justify-content:center;overflow:hidden;pointer-events:none;
-        transition:opacity .22s linear}
+    /* 启动页：系统启动屏 → 覆盖层 → 游戏首帧，三段保持同一版式、同一 logo 尺寸 */
+    #tq-boot{position:fixed;left:0;top:0;right:0;bottom:0;z-index:99999;
+        background:#fff;overflow:hidden;pointer-events:none;
+        transition:opacity .3s linear}
     #tq-boot.tq-hide{opacity:0}
-    /* 启动阶段整页白底：与系统启动屏、引擎自带加载页的背景连成一片，避免出现深色/灰色边带 */
-    html.tq-booting body{background:#fff !important;background-image:none !important}
-    #tq-boot-stage{position:relative;width:1200px;height:700px;flex:0 0 auto;transform-origin:50% 50%;
-        background:#fff;font-family:arial,helvetica,sans-serif}
-    #tq-boot-icon{position:absolute;left:440px;top:180px;width:321px;height:321px;border:0;display:block}
-    #tq-boot-name{display:none}
+    /* 启动阶段整页白底：html/body 都铺白，避免两侧露出深空底图、窗口底色或灰色边带 */
+    html.tq-booting, html.tq-booting body{background:#fff !important;background-image:none !important}
+    #tq-boot-stage{position:absolute;left:0;top:0;right:0;bottom:0;box-sizing:border-box;
+        display:flex;flex-direction:column;align-items:center;justify-content:center;
+        padding-bottom:12vh;font-family:arial,helvetica,sans-serif}
+    /* logo 尺寸对齐系统启动屏（实测 428px / 1080 高屏 ≈ 39.6vh） */
+    #tq-boot-icon{height:39.6vh;width:39.6vh;border:0;display:block}
+    #tq-boot-name{margin-top:2.4vh;font-size:4.4vh;line-height:1.2;color:#242740;
+        font-weight:700;letter-spacing:.02em;white-space:nowrap}
     #tq-boot-run{display:none}
-    #tq-boot-track{position:absolute;left:367px;top:504px;width:467px;height:32px;background:#454545}
-    #tq-boot-fill{position:absolute;left:0;top:0;height:32px;width:100%;background:#59BFCE;
+    /* 进度条与文字复刻引擎 loader：条在底部、文字在条下，左右对齐条的两端 */
+    #tq-boot-track{position:absolute;left:16vw;right:16vw;bottom:11vh;height:2.7vh;
+        background:#454545;overflow:hidden}
+    #tq-boot-fill{position:absolute;left:0;top:0;height:100%;width:100%;background:#59BFCE;
         transform-origin:0 50%;transform:scaleX(0);will-change:transform;
-        animation:tqfill 5s ease-out forwards, tqslow 20s linear 5s forwards}
-    @keyframes tqfill{from{transform:scaleX(0)}to{transform:scaleX(.3)}}
-    @keyframes tqslow{from{transform:scaleX(.3)}to{transform:scaleX(.45)}}
-    #tq-boot-txt{position:absolute;left:409px;top:508px;width:330px;height:28px;text-align:center;
-        font-size:19px;line-height:28px;color:#242740}
-    #tq-boot-pct{position:absolute;left:651px;top:508px;width:95px;text-align:center;
-        font-size:21px;line-height:26px;color:#242740}
+        animation:tqfill 9s ease-out forwards, tqslow 40s linear 9s forwards}
+    @keyframes tqfill{from{transform:scaleX(0)}to{transform:scaleX(.7)}}
+    @keyframes tqslow{from{transform:scaleX(.7)}to{transform:scaleX(.9)}}
+    #tq-boot-txt{position:absolute;left:16vw;bottom:5.4vh;width:40vw;text-align:left;
+        font-size:3.3vh;line-height:1.3;color:#242740}
+    #tq-boot-pct{position:absolute;right:16vw;bottom:5.4vh;width:40vw;text-align:right;
+        font-size:3.3vh;line-height:1.3;color:#242740}
     </style>
 </head>
 <body style="background-color: #04070f;">
@@ -277,32 +282,24 @@
 </body>
 <script src="oldmaps.js"></script>
 <script>
-/* 启动页：原生 logo 消失后直接显示加载进度页（复刻引擎 loader 版式），
-   等引擎自己的 loader 真正开始绘制后再淡出，交接时画面完全一致 */
+/* 启动页：系统启动屏结束后由覆盖层接管（同 logo 尺寸、整页白底）；
+   引擎自带 loader 藏在覆盖层下方，等它真正结束（isSplashing true→false）再淡出，
+   用户只会看到「系统 logo → 覆盖层 → 游戏画面」三段，前两段版式一致 */
 (function(){
-  var el=document.getElementById('tq-boot'), stage=document.getElementById('tq-boot-stage');
-  var fill=document.getElementById('tq-boot-fill'), pct=document.getElementById('tq-boot-pct');
-  if(!el||!stage) return;
-  function fit(){
-    var s=Math.min(window.innerWidth/1200, window.innerHeight/700);
-    stage.style.transform='scale('+s+')';
-  }
-  fit();
-  window.addEventListener('resize',fit);
-  window.addEventListener('orientationchange',fit);
+  var el=document.getElementById('tq-boot');
+  var pct=document.getElementById('tq-boot-pct');
+  if(!el||!pct) return;
 
-  var BARW=1200-13, t0=Date.now(), done=false, shown=-1;
-  /* 引擎初始化时主线程会被占满，JS 动画会整段冻结在 1% 左右。
-     因此进度条本体改由 CSS keyframes 驱动（合成线程执行，主线程卡住也照常推进），
-     这里的 JS 只负责同步数字，保证两者节奏一致。 */
+  var t0=Date.now(), done=false, shown=-1;
+  /* 引擎初始化时主线程会被占满，JS 动画会冻结；进度条本体交给 CSS keyframes（合成线程）驱动，
+     这里只同步百分比数字，节奏与 CSS 一致：9s→70%，之后 40s→90% 封顶 */
   function valueAt(ms){
-    if(ms<5000){ var t=ms/5000; return 30*(1-(1-t)*(1-t)); }
-    return Math.min(45, 30+(ms-5000)/20000*15);
+    if(ms<9000){ var t=ms/9000; return 70*(1-(1-t)*(1-t)); }
+    return Math.min(90, 70+(ms-9000)/40000*20);
   }
   (function paint(){
     if(done) return;
-    var v=valueAt(Date.now()-t0);
-    var ip=Math.floor(v);
+    var ip=Math.floor(valueAt(Date.now()-t0));
     if(ip!==shown){ shown=ip; pct.textContent=ip+'%'; }
     requestAnimationFrame(paint);
   })();
@@ -310,34 +307,33 @@
   function hide(){
     if(done) return;
     done=true;
+    /* 启动阶段结束：撤掉整页白底，恢复深空底色，避免游戏画布两侧出现白色边带 */
+    document.documentElement.classList.remove('tq-booting');
     el.className='tq-hide';
-    setTimeout(function(){ if(el&&el.parentNode) el.parentNode.removeChild(el); },300);
+    setTimeout(function(){ if(el&&el.parentNode) el.parentNode.removeChild(el); },400);
   }
-  /* 引擎 loader 已上屏的信号：主画布被隐藏 / isSplashing 为真 / 首个布局已启动 */
-  function loaderUp(){
-    var rt=window.xfruntime;
-    if(rt){
-      if(rt.canvas&&rt.canvas.hidden) return true;
-      if(rt.isSplashing) return true;
-      if(rt.running_layout) return true;
-    }
-    return false;
-  }
-  var upAt=0, frames=0;
+  /* 引擎 loader 画在自己的 overlay canvas 上并置 isSplashing=true；
+     它变为 false 时 loader 已被移除、首个布局正在启动，再等 300ms 让首帧上屏再淡出 */
+  var sawSplash=false, endAt=0;
   var raf=window.requestAnimationFrame||function(f){ return setTimeout(f,16); };
   (function tick(){
     if(done) return;
     try{
       var rt=window.xfruntime;
-      /* 首个布局已启动 = 引擎 loader 已在绘制，再等 2 帧即交接，不再留稳定窗口 */
-      if(rt&&rt.running_layout){
-        if(++frames>=2){ raf(hide); return; }
-      }else if(loaderUp()){
-        if(!upAt) upAt=Date.now();
-        if(Date.now()-upAt>120){ hide(); return; }
-      }else{ upAt=0; frames=0; }
+      if(rt){
+        if(rt.isSplashing){
+          sawSplash=true; endAt=0;
+        }else if(sawSplash){
+          if(!endAt) endAt=Date.now();
+          var wait=Date.now()-endAt;
+          if(wait>300&&(rt.running_layout||wait>1500)){ hide(); return; }
+        }else if(rt.running_layout&&rt.progress>=100){
+          /* 资源已加载完但没观察到 loader 过程（极快加载）时兜底 */
+          hide(); return;
+        }
+      }
     }catch(e){}
-    if(Date.now()-t0>90000){ hide(); return; }
+    if(Date.now()-t0>120000){ hide(); return; }
     raf(tick);
   })();
 })();
