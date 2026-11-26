@@ -43,6 +43,14 @@
     #tq-boot-txt{font-size:3.0vh;line-height:1;color:#5a6573;letter-spacing:.04em}
     #tq-boot-pct{font-size:3.7vh;line-height:1;color:#2b8ea3;font-weight:700;
         letter-spacing:.01em;font-variant-numeric:tabular-nums}
+    /* 进度增长时的柔光脉冲：跟随填充条头部，向外扩散后淡出 */
+    #tq-boot-pulse{position:absolute;left:16vw;bottom:calc(19vh + 1.35vh);
+        width:9vh;height:9vh;margin:0 0 -4.5vh -4.5vh;border-radius:50%;
+        pointer-events:none;opacity:0;will-change:transform,opacity;
+        background:radial-gradient(circle,rgba(156,238,248,.9) 0%,rgba(89,191,206,.45) 38%,rgba(89,191,206,0) 70%);
+        transition:left .45s cubic-bezier(.25,.8,.3,1)}
+    #tq-boot-pulse.pv{animation:tqpulse .6s ease-out}
+    @keyframes tqpulse{0%{opacity:0;transform:scale(.35)}28%{opacity:.85}100%{opacity:0;transform:scale(1.35)}}
     /* 「正在初始化…」的省略号呼吸动画 */
     #tq-boot-txt .tqdot{display:inline-block;animation:tqdot 1.2s linear infinite}
     #tq-boot-txt .tqdot:nth-child(3){animation-delay:.2s}
@@ -56,6 +64,7 @@
         <img id="tq-boot-icon" src="assets/icons/icon-512.png" alt="">
         <div id="tq-boot-run"></div>
         <div id="tq-boot-track"><div id="tq-boot-fill"><i id="tq-boot-shine"></i></div></div>
+        <i id="tq-boot-pulse"></i>
         <div id="tq-boot-info">
             <div id="tq-boot-txt"><span id="tq-boot-ph">正在初始化</span><span class="tqdot">.</span><span class="tqdot">.</span><span class="tqdot">.</span></div>
             <div id="tq-boot-pct"></div>
@@ -305,9 +314,10 @@
   var el=document.getElementById('tq-boot');
   var pct=document.getElementById('tq-boot-pct');
   var fill=document.getElementById('tq-boot-fill');
+  var pulse=document.getElementById('tq-boot-pulse');
   if(!el||!pct||!fill) return;
 
-  var t0=Date.now(), done=false, real=false, shown=-1;
+  var t0=Date.now(), done=false, real=false, shown=-1, lastPulse=0;
   /* 进度条默认不定态滚动（CSS keyframes，合成线程驱动，不显示假百分比）；
      一旦读到引擎真实进度 rt.progress(0~100)，切成确定态并同步数字 */
   function showReal(p){
@@ -322,6 +332,17 @@
       if(ph) ph.textContent='正在加载';
     }
     fill.style.width=p+'%';
+    if(pulse){
+      pulse.style.left=(16+68*p/100)+'vw';
+      var now=Date.now();
+      /* 脉冲节流：进度更新很密时保持约每 0.5s 一次的柔和呼吸，避免闪烁 */
+      if(now-lastPulse>520){
+        lastPulse=now;
+        pulse.classList.remove('pv');
+        void pulse.offsetWidth;
+        pulse.classList.add('pv');
+      }
+    }
     var ip=Math.floor(p);
     if(ip!==shown){ shown=ip; pct.textContent=ip+'%'; }
   }
