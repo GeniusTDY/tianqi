@@ -48,10 +48,38 @@
     #tq-boot-txt .tqdot:nth-child(3){animation-delay:.2s}
     #tq-boot-txt .tqdot:nth-child(4){animation-delay:.4s}
     @keyframes tqdot{0%,60%,100%{opacity:.15}30%{opacity:1}}
+    /* 临时启动计时（诊断用） */
+    #tq-dbg{position:absolute;left:3vw;top:8vh;font:700 3.8vh/1.15 monospace;color:#5b6472;
+        letter-spacing:.02em;white-space:nowrap;z-index:5}
     </style>
+    <script>
+    /* 临时启动计时（诊断用）：D=deviceready B=进入离线启动 J=data.json就绪 R=引擎实例 P=真实进度 */
+    (function(){
+      var now=function(){ return (window.performance&&performance.now)?performance.now():Date.now(); };
+      var t0=now(), m={};
+      window.__tqMark=function(k){
+        if(m[k]===undefined){ m[k]=now()-t0; paint(); }
+      };
+      function paint(){
+        var el=document.getElementById('tq-dbg'); if(!el) return;
+        var f=function(k){ return m[k]===undefined?'-':(m[k]/1000).toFixed(1); };
+        el.textContent='D'+f('d')+' B'+f('b')+' J'+f('j')+' R'+f('r')+' P'+f('p');
+      }
+      document.addEventListener('deviceready',function(){ window.__tqMark('d'); },false);
+      var ol=console.log;
+      console.log=function(){
+        try{
+          var s=Array.prototype.join.call(arguments,' ');
+          if(s.indexOf('不需要登录')>=0) window.__tqMark('b');
+        }catch(e){}
+        return ol.apply(console,arguments);
+      };
+      setInterval(paint,300);
+    })();
+    </script>
 </head>
 <body style="background-color: #04070f;">
-    <div id="tq-boot"><div id="tq-boot-stage">
+    <div id="tq-boot"><div id="tq-dbg"></div><div id="tq-boot-stage">
         <img id="tq-boot-icon" src="assets/images/emblem321.webp" alt="">
         <div id="tq-boot-name">天启竞技场</div>
         <div id="tq-boot-run"></div>
@@ -341,6 +369,10 @@
     try{
       var rt=window.xfruntime;
       if(rt){
+        if(window.__tqMark){
+          window.__tqMark('r');
+          if(typeof rt.progress==='number'&&rt.progress>0) window.__tqMark('p');
+        }
         if(typeof rt.progress==='number'&&rt.progress>0) showReal(rt.progress);
         if(rt.isSplashing){
           sawSplash=true; endAt=0;
