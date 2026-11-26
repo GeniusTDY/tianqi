@@ -186,7 +186,6 @@
                             // 明文包：直接把原文交给运行时解析，避免二次 parse + stringify
                             var jsonStr = new TextDecoder().decode(buffer);
                             decryptedData = jsonStr;
-                            try { window.__tqMark && window.__tqMark('j'); } catch (e) {}
                             log('data.json 明文读取成功');
                             resolve(decryptedData);
                         } catch (e) {
