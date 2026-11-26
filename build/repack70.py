@@ -1,11 +1,11 @@
 import zipfile, os
 
-SRC = '/workspace/build/base69.apk'
-OUT = '/workspace/build/TianQi-Full-v3.7.70-unsigned.apk'
+SRC = '/workspace/build/base70.apk'
+OUT = '/workspace/build/TianQi-Full-v3.7.71-unsigned.apk'
 SKIP = {'META-INF/TIANQI.SF', 'META-INF/TIANQI.RSA', 'META-INF/MANIFEST.MF',
         'META-INF/TIANQITE.SF', 'META-INF/TIANQITE.RSA'}
 
-REPLACE = {'assets/www/index.html': '/workspace/build/index70.html'}
+REPLACE = {'assets/www/index.html': '/workspace/build/index71.html'}
 
 zin = zipfile.ZipFile(SRC)
 with zipfile.ZipFile(OUT, 'w') as zout:
