@@ -1,42 +1,39 @@
-import io,struct,zipfile,sys,urllib.request,os
-
-class HttpFile(io.RawIOBase):
-    def __init__(self,url):
-        self.url=url; self.pos=0
-        req=urllib.request.Request(url,method='HEAD')
-        with urllib.request.urlopen(req) as r:
-            self.size=int(r.headers['Content-Length']); self.final=r.geturl()
-    def seekable(self): return True
-    def readable(self): return True
-    def seek(self,off,whence=0):
-        if whence==0: self.pos=off
-        elif whence==1: self.pos+=off
-        else: self.pos=self.size+off
-        return self.pos
-    def tell(self): return self.pos
-    def read(self,n=-1):
-        if n<0: n=self.size-self.pos
-        if n==0 or self.pos>=self.size: return b''
-        end=min(self.pos+n,self.size)-1
-        req=urllib.request.Request(self.final,headers={'Range':f'bytes={self.pos}-{end}'})
-        with urllib.request.urlopen(req) as r: data=r.read()
-        self.pos+=len(data)
-        return data
-    def readinto(self,b):
-        data=self.read(len(b))
-        b[:len(data)]=data
-        return len(data)
-
-url=sys.argv[1]; out=sys.argv[2]; target=sys.argv[3]
-hf=HttpFile(url)
-print('remote size',hf.size,hf.final)
-zf=zipfile.ZipFile(io.BufferedReader(hf, buffer_size=1<<20))
-info=zf.getinfo(target)
-print(target,'compress_size',info.compress_size,'file_size',info.file_size)
-os.makedirs(os.path.dirname(out),exist_ok=True)
-with zf.open(info) as src, open(out,'wb') as dst:
-    while True:
-        b=src.read(1<<20)
-        if not b: break
-        dst.write(b)
-print('saved',out,os.path.getsize(out))
+import sys,urllib.request,struct
+def main(url,out,member):
+    req=urllib.request.Request(url,method='HEAD')
+    with urllib.request.urlopen(req,timeout=60) as r:
+        size=int(r.headers['Content-Length'])
+    def get(a,b):
+        h={'Range':f'bytes={a}-{b}'}
+        with urllib.request.urlopen(urllib.request.Request(url,headers=h),timeout=120) as r:
+            return r.read()
+    # 读 EOCD
+    tail=get(max(0,size-65536),size-1)
+    i=tail.rfind(b'PK\x05\x06')
+    assert i>=0
+    cdoff=struct.unpack('<I',tail[i+16:i+20])[0]
+    cdlen=struct.unpack('<I',tail[i+12:i+16])[0]
+    cd=get(cdoff,cdoff+cdlen-1)
+    j=0
+    while j<len(cd):
+        assert cd[j:j+4]==b'PK\x01\x02',cd[j:j+4]
+        nlen=struct.unpack('<H',cd[j+28:j+30])[0]
+        elen=struct.unpack('<H',cd[j+30:j+32])[0]
+        clen=struct.unpack('<H',cd[j+32:j+34])[0]
+        off=struct.unpack('<I',cd[j+42:j+46])[0]
+        comp=struct.unpack('<H',cd[j+10:j+12])[0]
+        csize=struct.unpack('<I',cd[j+20:j+24])[0]
+        name=cd[j+46:j+46+nlen].decode()
+        if name==member:
+            hdr=get(off,off+29)
+            fnlen=struct.unpack('<H',hdr[26:28])[0]
+            el2=struct.unpack('<H',hdr[28:30])[0]
+            dataoff=off+30+fnlen+el2
+            data=get(dataoff,dataoff+csize-1)
+            if comp==8:
+                import zlib; data=zlib.decompress(data,-15)
+            open(out,'wb').write(data)
+            print('saved',out,len(data)); return
+        j+=46+nlen+elen+clen
+    print('not found')
+main(sys.argv[1],sys.argv[2],sys.argv[3])
